@@ -178,7 +178,7 @@ export const getMyIdeas = async (req: Request, res: Response) => {
 // GET /api/ideas/:id — Single idea detail
 export const getIdeaById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const idea = await prisma.idea.findUnique({
       where: { id },
@@ -301,7 +301,7 @@ export const createIdea = async (req: Request, res: Response) => {
 // PUT /api/ideas/:id — Update idea (only unpublished)
 export const updateIdea = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.id;
 
     const existingIdea = await prisma.idea.findUnique({ where: { id } });
@@ -354,7 +354,7 @@ export const updateIdea = async (req: Request, res: Response) => {
 // DELETE /api/ideas/:id — Delete idea (only unpublished)
 export const deleteIdea = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.id;
 
     const idea = await prisma.idea.findUnique({ where: { id } });
@@ -382,7 +382,7 @@ export const deleteIdea = async (req: Request, res: Response) => {
 // PATCH /api/ideas/:id/submit — Submit for review
 export const submitIdea = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.id;
 
     const idea = await prisma.idea.findUnique({ where: { id } });

@@ -50,7 +50,7 @@ export const getUsers = async (req: Request, res: Response) => {
 // PATCH /api/admin/users/:id/toggle — Activate/deactivate user
 export const toggleUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
@@ -88,7 +88,7 @@ export const toggleUser = async (req: Request, res: Response) => {
 // PATCH /api/admin/users/:id/role — Change user role
 export const changeUserRole = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { role } = req.body;
 
     if (!['MEMBER', 'ADMIN'].includes(role)) {
@@ -172,7 +172,7 @@ export const getAdminIdeas = async (req: Request, res: Response) => {
 // PATCH /api/admin/ideas/:id/approve — Approve idea
 export const approveIdea = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const idea = await prisma.idea.findUnique({ where: { id } });
     if (!idea) {
@@ -201,7 +201,7 @@ export const approveIdea = async (req: Request, res: Response) => {
 // PATCH /api/admin/ideas/:id/reject — Reject idea with feedback
 export const rejectIdea = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { feedback } = req.body;
 
     if (!feedback || feedback.trim().length === 0) {
@@ -238,7 +238,7 @@ export const rejectIdea = async (req: Request, res: Response) => {
 // DELETE /api/admin/ideas/:id — Delete any idea
 export const deleteAdminIdea = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const idea = await prisma.idea.findUnique({ where: { id } });
     if (!idea) {

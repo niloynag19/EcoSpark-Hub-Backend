@@ -5,7 +5,7 @@ import { sendSuccess, sendError } from '../../utils/response';
 // POST /api/ideas/:id/vote — Cast or change vote
 export const castVote = async (req: Request, res: Response) => {
   try {
-    const { id: ideaId } = req.params;
+    const ideaId = req.params.id as string;
     const userId = req.user!.id;
     const { type } = req.body; // 'UPVOTE' or 'DOWNVOTE'
 
@@ -74,7 +74,7 @@ export const castVote = async (req: Request, res: Response) => {
 // DELETE /api/ideas/:id/vote — Remove vote
 export const removeVote = async (req: Request, res: Response) => {
   try {
-    const { id: ideaId } = req.params;
+    const ideaId = req.params.id as string;
     const userId = req.user!.id;
 
     const existingVote = await prisma.vote.findUnique({
@@ -106,7 +106,7 @@ export const removeVote = async (req: Request, res: Response) => {
 // GET /api/ideas/:id/vote — Get user's vote on an idea
 export const getUserVote = async (req: Request, res: Response) => {
   try {
-    const { id: ideaId } = req.params;
+    const ideaId = req.params.id as string;
     const userId = req.user!.id;
 
     const vote = await prisma.vote.findUnique({

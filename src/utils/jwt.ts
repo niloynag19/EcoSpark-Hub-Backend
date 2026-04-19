@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 
 interface TokenPayload {
   sub: string;
@@ -9,7 +9,7 @@ export const generateAccessToken = (userId: string, role: string): string => {
   return jwt.sign(
     { sub: userId, role } as TokenPayload,
     process.env.JWT_SECRET || 'fallback-secret',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
+    { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') } as SignOptions
   );
 };
 
@@ -17,7 +17,7 @@ export const generateRefreshToken = (userId: string, role: string): string => {
   return jwt.sign(
     { sub: userId, role } as TokenPayload,
     process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret',
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+    { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') } as SignOptions
   );
 };
 

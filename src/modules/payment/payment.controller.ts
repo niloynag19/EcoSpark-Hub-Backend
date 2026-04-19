@@ -96,7 +96,7 @@ export const confirmPayment = async (req: Request, res: Response) => {
 export const checkPayment = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { ideaId } = req.params;
+    const { ideaId } = req.params as { ideaId: string };
 
     const payment = await prisma.payment.findUnique({
       where: { userId_ideaId: { userId, ideaId } },

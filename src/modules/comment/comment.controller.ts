@@ -5,7 +5,7 @@ import { sendSuccess, sendError } from '../../utils/response';
 // GET /api/ideas/:id/comments — Get nested comments
 export const getComments = async (req: Request, res: Response) => {
   try {
-    const { id: ideaId } = req.params;
+    const ideaId = req.params.id as string;
 
     const comments = await prisma.comment.findMany({
       where: { ideaId, parentId: null },
@@ -43,7 +43,7 @@ export const getComments = async (req: Request, res: Response) => {
 // POST /api/ideas/:id/comments — Add comment
 export const addComment = async (req: Request, res: Response) => {
   try {
-    const { id: ideaId } = req.params;
+    const ideaId = req.params.id as string;
     const userId = req.user!.id;
     const { content, parentId } = req.body;
 
@@ -93,7 +93,7 @@ export const addComment = async (req: Request, res: Response) => {
 // DELETE /api/comments/:id — Delete comment (owner or admin)
 export const deleteComment = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.id;
     const userRole = req.user!.role;
 
