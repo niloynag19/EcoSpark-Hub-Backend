@@ -1,12 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '../.env' });
 
 const prisma = new PrismaClient();
 
 async function main() {
   try {
-    console.log('Testing connection...');
-    const result = await prisma.category.findMany();
-    console.log('Categories:', result);
+    console.log('Testing connection to:', process.env.DATABASE_URL);
+    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    console.log('Connection successful:', result);
   } catch (error) {
     console.error('Connection failed:', error);
   } finally {

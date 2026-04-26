@@ -32,6 +32,21 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'EcoSpark Hub API is running 🌿', timestamp: new Date().toISOString() });
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to EcoSpark Hub API 🌿',
+    status: 'Operational',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      ideas: '/api/ideas',
+      users: '/api/users'
+    }
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/ideas', ideaRoutes);
