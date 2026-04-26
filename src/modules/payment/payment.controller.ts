@@ -110,3 +110,42 @@ export const checkPayment = async (req: Request, res: Response) => {
     return sendError(res, 'Failed to check payment');
   }
 };
+
+// GET /api/payments/my-purchases — List purchased ideas
+export const getMyPayments = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    const payments = await prisma.payment.findMany({
+      where: { userId, status: 'succeeded' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        idea: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            description: true,
+            images: true,
+            isPaid: true,
+            price: true,
+            upvoteCount: true,
+            commentCount: true,
+            category: { select: { id: true, name: true, icon: true } },
+            author: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    const ideas = payments.map((p) => ({
+      ...p.idea,
+      purchaseDate: p.createdAt,
+    }));
+
+    return sendSuccess(res, ideas);
+  } catch (error) {
+    console.error('GetMyPayments error:', error);
+    return sendError(res, 'Failed to fetch purchased ideas');
+  }
+};

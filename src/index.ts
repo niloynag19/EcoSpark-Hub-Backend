@@ -1,3 +1,4 @@
+// EcoSpark Hub API Entry Point
 import app from './app';
 import dotenv from 'dotenv';
 

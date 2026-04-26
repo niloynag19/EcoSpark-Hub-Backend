@@ -45,10 +45,14 @@ export const addComment = async (req: Request, res: Response) => {
   try {
     const ideaId = req.params.id as string;
     const userId = req.user!.id;
-    const { content, parentId } = req.body;
+    const { content, parentId, rating } = req.body;
 
     if (!content || content.trim().length === 0) {
       return sendError(res, 'Comment content is required', 400);
+    }
+
+    if (rating && (rating < 1 || rating > 10)) {
+      return sendError(res, 'Rating must be between 1 and 10', 400);
     }
 
     // Check idea exists
@@ -71,6 +75,7 @@ export const addComment = async (req: Request, res: Response) => {
         userId,
         ideaId,
         parentId: parentId || null,
+        rating: rating || null,
       },
       include: {
         user: { select: { id: true, name: true, avatar: true } },

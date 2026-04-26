@@ -8,6 +8,7 @@ import {
   rejectIdea,
   deleteAdminIdea,
   getAdminStats,
+  updateIdeaCategory,
 } from './admin.controller';
 import { authenticate } from '../../middleware/auth.middleware';
 import { requireRole } from '../../middleware/role.middleware';
@@ -29,6 +30,7 @@ router.patch('/users/:id/role', changeUserRole);
 router.get('/ideas', getAdminIdeas);
 router.patch('/ideas/:id/approve', approveIdea);
 router.patch('/ideas/:id/reject', rejectIdea);
+router.patch('/ideas/:id/category', updateIdeaCategory);
 router.delete('/ideas/:id', deleteAdminIdea);
 
 export default router;

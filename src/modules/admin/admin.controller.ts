@@ -254,6 +254,36 @@ export const deleteAdminIdea = async (req: Request, res: Response) => {
   }
 };
 
+// PATCH /api/admin/ideas/:id/category — Change idea category
+export const updateIdeaCategory = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { categoryId } = req.body;
+
+    if (!categoryId) {
+      return sendError(res, 'Category ID is required', 400);
+    }
+
+    const idea = await prisma.idea.findUnique({ where: { id } });
+    if (!idea) {
+      return sendError(res, 'Idea not found', 404);
+    }
+
+    const updated = await prisma.idea.update({
+      where: { id },
+      data: { categoryId },
+      include: {
+        category: { select: { id: true, name: true, slug: true, icon: true } },
+      },
+    });
+
+    return sendSuccess(res, updated, 'Idea category updated successfully');
+  } catch (error) {
+    console.error('UpdateIdeaCategory error:', error);
+    return sendError(res, 'Failed to update idea category');
+  }
+};
+
 // GET /api/admin/stats — Dashboard stats
 export const getAdminStats = async (req: Request, res: Response) => {
   try {

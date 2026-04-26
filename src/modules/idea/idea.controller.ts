@@ -44,7 +44,20 @@ export const getIdeas = async (req: Request, res: Response) => {
     }
 
     if (category) {
-      where.categoryId = category;
+      where.category = {
+        OR: [
+          { id: category },
+          { slug: category }
+        ]
+      };
+    }
+
+    if (req.query.author) {
+      where.authorId = req.query.author as string;
+    }
+
+    if (req.query.minVotes) {
+      where.upvoteCount = { gte: parseInt(req.query.minVotes as string) };
     }
 
     if (paymentFilter === 'free') {
@@ -213,17 +226,19 @@ export const getIdeaById = async (req: Request, res: Response) => {
       return sendError(res, 'Idea not found', 404);
     }
 
+    // Permission check for non-approved ideas
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'ADMIN';
+    const isAuthor = userId === idea.authorId;
+
+    if (idea.status !== 'APPROVED' && !isAdmin && !isAuthor) {
+      return sendError(res, 'Unauthorized to view this idea', 403);
+    }
+
     // If idea is paid and user hasn't paid, hide full content
     if (idea.isPaid && idea.status === 'APPROVED') {
-      const userId = req.user?.id;
-
-      // Author can always see their own idea
-      if (userId && userId === idea.authorId) {
-        return sendSuccess(res, { ...idea, hasAccess: true });
-      }
-
-      // Admin can always see
-      if (req.user?.role === 'ADMIN') {
+      // Author and Admin can always see
+      if (isAdmin || isAuthor) {
         return sendSuccess(res, { ...idea, hasAccess: true });
       }
 
@@ -243,7 +258,7 @@ export const getIdeaById = async (req: Request, res: Response) => {
       return sendSuccess(res, {
         ...idea,
         problemStatement: idea.problemStatement.substring(0, 150) + '...',
-        proposedSolution: 'Unlock this idea to see the proposed solution.',
+        proposedSolution: 'Unlock this premium idea to see the complete proposed solution.',
         description: idea.description.substring(0, 200) + '...',
         hasAccess: false,
       });

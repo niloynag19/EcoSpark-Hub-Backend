@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -86,6 +87,10 @@ model Idea {
   @@index([status])
   @@index([categoryId])
   @@index([authorId])
+  @@index([upvoteCount])
+  @@index([createdAt])
+  @@index([isPaid])
+  @@index([title])
   @@map("ideas")
 }
 
@@ -106,6 +111,7 @@ model Vote {
 model Comment {
   id        String   @id @default(uuid())
   content   String   @db.Text
+  rating    Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
