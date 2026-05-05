@@ -42,8 +42,8 @@ export const getUsers = async (req: Request, res: Response) => {
 
     return sendPaginated(res, users, total, page, limit);
   } catch (error) {
-    console.error('GetUsers error:', error);
-    return sendError(res, 'Failed to fetch users');
+    console.error('GetUsers error details:', error);
+    return sendError(res, `Failed to fetch users: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
@@ -132,7 +132,7 @@ export const getAdminIdeas = async (req: Request, res: Response) => {
     }
 
     const [ideas, total] = await Promise.all([
-      prisma.idea.findMany({
+      (prisma.idea as any).findMany({
         where,
         skip,
         take: limit,
@@ -150,6 +150,7 @@ export const getAdminIdeas = async (req: Request, res: Response) => {
           upvoteCount: true,
           downvoteCount: true,
           commentCount: true,
+          isFeatured: true,
           createdAt: true,
           author: {
             select: { id: true, name: true, email: true, avatar: true },
@@ -284,38 +285,64 @@ export const updateIdeaCategory = async (req: Request, res: Response) => {
   }
 };
 
+// PATCH /api/admin/ideas/:id/featured — Toggle featured status
+export const toggleFeaturedIdea = async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+
+    const idea = await prisma.idea.findUnique({ where: { id } });
+    if (!idea) {
+      return sendError(res, 'Idea not found', 404);
+    }
+
+    const updated: any = await prisma.idea.update({
+      where: { id },
+      data: { isFeatured: !(idea as any).isFeatured } as any,
+    });
+
+    return sendSuccess(
+      res,
+      updated,
+      `Idea ${updated.isFeatured ? 'featured' : 'unfeatured'} successfully`
+    );
+  } catch (error) {
+    console.error('ToggleFeaturedIdea error:', error);
+    return sendError(res, 'Failed to toggle featured status');
+  }
+};
+
 // GET /api/admin/stats — Dashboard stats
 export const getAdminStats = async (req: Request, res: Response) => {
   try {
     const [
       totalUsers,
       totalIdeas,
-      underReview,
-      approved,
-      rejected,
-      drafts,
+      ideaStats,
       totalComments,
       totalVotes,
       newsletters,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.idea.count(),
-      prisma.idea.count({ where: { status: 'UNDER_REVIEW' } }),
-      prisma.idea.count({ where: { status: 'APPROVED' } }),
-      prisma.idea.count({ where: { status: 'REJECTED' } }),
-      prisma.idea.count({ where: { status: 'DRAFT' } }),
+      (prisma.idea as any).groupBy({
+        by: ['status'],
+        _count: true,
+      }),
       prisma.comment.count(),
       prisma.vote.count(),
       prisma.newsletter.count(),
     ]);
 
+    const getCount = (status: string) => 
+      ideaStats.find((s: any) => s.status === status)?._count || 0;
+
     return sendSuccess(res, {
       totalUsers,
       totalIdeas,
-      underReview,
-      approved,
-      rejected,
-      drafts,
+      underReview: getCount('UNDER_REVIEW'),
+      approved: getCount('APPROVED'),
+      rejected: getCount('REJECTED'),
+      drafts: getCount('DRAFT'),
       totalComments,
       totalVotes,
       newsletters,

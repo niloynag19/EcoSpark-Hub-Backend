@@ -72,6 +72,7 @@ model Idea {
   upvoteCount      Int        @default(0)
   downvoteCount    Int        @default(0)
   commentCount     Int        @default(0)
+  isFeatured       Boolean    @default(false)
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 

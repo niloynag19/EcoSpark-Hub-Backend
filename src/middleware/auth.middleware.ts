@@ -21,7 +21,11 @@ declare global {
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate('jwt', { session: false }, (err: any, user: AuthUser | false) => {
     if (err) {
-      return res.status(500).json({ success: false, message: 'Authentication error' });
+      console.error('Passport auth error:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Authentication error: ${err instanceof Error ? err.message : 'Unknown error'}` 
+      });
     }
     if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized. Please login.' });

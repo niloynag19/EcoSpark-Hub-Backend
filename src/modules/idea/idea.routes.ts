@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getIdeas,
   getFeaturedIdeas,
+  getPublicStats,
   getMyIdeas,
   getIdeaById,
   createIdea,
@@ -17,6 +18,7 @@ const router = Router();
 // Public routes
 router.get('/', optionalAuth, getIdeas);
 router.get('/featured', getFeaturedIdeas);
+router.get('/stats/public', getPublicStats);
 
 // Auth required routes
 router.get('/my', authenticate, getMyIdeas);
