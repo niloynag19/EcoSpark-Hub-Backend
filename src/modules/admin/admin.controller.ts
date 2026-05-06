@@ -209,16 +209,19 @@ export const rejectIdea = async (req: Request, res: Response) => {
       return sendError(res, 'Feedback is required when rejecting an idea', 400);
     }
 
-    const idea = await prisma.idea.findUnique({ where: { id } });
+    console.log(`Rejecting idea ${id} with feedback: ${feedback}`);
+    const idea = await (prisma.idea as any).findUnique({ where: { id } });
     if (!idea) {
+      console.log(`Idea ${id} not found for rejection`);
       return sendError(res, 'Idea not found', 404);
     }
 
-    if (idea.status !== 'UNDER_REVIEW') {
-      return sendError(res, 'Only ideas under review can be rejected', 400);
+    if (idea.status !== 'UNDER_REVIEW' && idea.status !== 'APPROVED') {
+      console.log(`Idea ${id} has status ${idea.status}, cannot reject`);
+      return sendError(res, 'Only ideas under review or approved can be rejected', 400);
     }
 
-    const updated = await prisma.idea.update({
+    const updated = await (prisma.idea as any).update({
       where: { id },
       data: {
         status: 'REJECTED',
@@ -241,12 +244,15 @@ export const deleteAdminIdea = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
 
-    const idea = await prisma.idea.findUnique({ where: { id } });
+    console.log(`Deleting idea ${id} (Admin)`);
+    const idea = await (prisma.idea as any).findUnique({ where: { id } });
     if (!idea) {
+      console.log(`Idea ${id} not found for deletion`);
       return sendError(res, 'Idea not found', 404);
     }
 
-    await prisma.idea.delete({ where: { id } });
+    await (prisma.idea as any).delete({ where: { id } });
+    console.log(`Idea ${id} deleted successfully`);
 
     return sendSuccess(res, null, 'Idea deleted successfully');
   } catch (error) {
@@ -314,39 +320,53 @@ export const toggleFeaturedIdea = async (req: Request, res: Response) => {
 // GET /api/admin/stats — Dashboard stats
 export const getAdminStats = async (req: Request, res: Response) => {
   try {
-    const [
-      totalUsers,
-      totalIdeas,
-      ideaStats,
-      totalComments,
-      totalVotes,
-      newsletters,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.idea.count(),
-      (prisma.idea as any).groupBy({
-        by: ['status'],
-        _count: true,
-      }),
-      prisma.comment.count(),
-      prisma.vote.count(),
-      prisma.newsletter.count(),
-    ]);
+    // Optimization: Use a single raw query to get all counts in one DB roundtrip
+    // This is significantly faster for the Dashboard Overview
+    const counts: any = await prisma.$queryRaw`
+      SELECT 
+        (SELECT COUNT(*) FROM users) as "totalUsers",
+        (SELECT COUNT(*) FROM ideas) as "totalIdeas",
+        (SELECT COUNT(*) FROM comments) as "totalComments",
+        (SELECT COUNT(*) FROM votes) as "totalVotes",
+        (SELECT COUNT(*) FROM newsletters) as "totalNewsletters",
+        (SELECT COUNT(*) FROM ideas WHERE status = 'APPROVED') as "approvedIdeas",
+        (SELECT COUNT(*) FROM ideas WHERE status = 'UNDER_REVIEW') as "pendingIdeas",
+        (SELECT COUNT(*) FROM ideas WHERE status = 'REJECTED') as "rejectedIdeas",
+        (SELECT COUNT(*) FROM ideas WHERE status = 'DRAFT') as "draftIdeas"
+    `;
 
-    const getCount = (status: string) => 
-      ideaStats.find((s: any) => s.status === status)?._count || 0;
+    const { 
+      totalUsers, 
+      totalIdeas, 
+      totalComments, 
+      totalVotes, 
+      totalNewsletters,
+      approvedIdeas,
+      pendingIdeas,
+      rejectedIdeas,
+      draftIdeas
+    } = counts[0];
 
-    return sendSuccess(res, {
-      totalUsers,
-      totalIdeas,
-      underReview: getCount('UNDER_REVIEW'),
-      approved: getCount('APPROVED'),
-      rejected: getCount('REJECTED'),
-      drafts: getCount('DRAFT'),
-      totalComments,
-      totalVotes,
-      newsletters,
-    });
+    // Format to match expected output structure
+    const data = {
+      totalUsers: Number(totalUsers),
+      totalIdeas: Number(totalIdeas),
+      totalComments: Number(totalComments),
+      totalVotes: Number(totalVotes),
+      totalNewsletters: Number(totalNewsletters),
+      approved: Number(approvedIdeas),
+      pending: Number(pendingIdeas),
+      rejected: Number(rejectedIdeas),
+      draft: Number(draftIdeas),
+      ideaStats: [
+        { status: 'APPROVED', _count: Number(approvedIdeas) },
+        { status: 'UNDER_REVIEW', _count: Number(pendingIdeas) },
+        { status: 'REJECTED', _count: Number(rejectedIdeas) },
+        { status: 'DRAFT', _count: Number(draftIdeas) },
+      ]
+    };
+
+    return sendSuccess(res, data);
   } catch (error) {
     console.error('GetAdminStats error:', error);
     return sendError(res, 'Failed to fetch stats');

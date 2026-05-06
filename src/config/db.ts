@@ -28,7 +28,7 @@ function createPrismaClient(): PrismaClient {
 
             return async (...args: any[]) => {
               const maxRetries = 15; // Increased retries for slower wakeups
-              const delayMs = 3000;  // Increased delay
+              const delayMs = 1000;  // Ultra-low delay for fastest response
               let lastError: any;
 
               for (let attempt = 1; attempt <= maxRetries; attempt++) {

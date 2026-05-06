@@ -112,9 +112,15 @@ export const getIdeas = async (req: Request, res: Response) => {
   }
 };
 
+import { getCache, setCache } from '../../utils/cache';
+
 // GET /api/ideas/featured — Top 3 by votes
 export const getFeaturedIdeas = async (req: Request, res: Response) => {
   try {
+    const cacheKey = 'featured_ideas';
+    const cachedData = getCache(cacheKey);
+    if (cachedData) return sendSuccess(res, cachedData);
+
     const ideas = await (prisma.idea as any).findMany({
       where: { status: 'APPROVED' },
       orderBy: [
@@ -144,6 +150,7 @@ export const getFeaturedIdeas = async (req: Request, res: Response) => {
       },
     });
 
+    setCache(cacheKey, ideas, 300); // Cache for 5 minutes
     return sendSuccess(res, ideas);
   } catch (error) {
     console.error('GetFeaturedIdeas error:', error);
@@ -209,18 +216,25 @@ export const getFeaturedIdeas = async (req: Request, res: Response) => {
 // GET /api/ideas/stats/public — Platform overview stats for homepage
 export const getPublicStats = async (req: Request, res: Response) => {
   try {
+    const cacheKey = 'public_stats';
+    const cachedData = getCache(cacheKey);
+    if (cachedData) return sendSuccess(res, cachedData);
+
     // Sequentially fetch to avoid connection pool spikes on serverless DBs
     const userCount = await prisma.user.count().catch(() => 10240); // Fallback to nice number
     const ideaCount = await prisma.idea.count({ where: { status: 'APPROVED' } }).catch(() => 450);
     const voteCount = await prisma.vote.count().catch(() => 15000);
 
-    return sendSuccess(res, {
+    const stats = {
       activeContributors: userCount,
       approvedInnovations: ideaCount,
       totalImpactVotes: voteCount,
       waterSaved: "2.4M", 
       energyGained: "450 GWh"
-    });
+    };
+
+    setCache(cacheKey, stats, 600); // Cache for 10 minutes
+    return sendSuccess(res, stats);
   } catch (error) {
     console.error('GetPublicStats error:', error);
     // Even if it fails completely, return mock data so hero doesn't break
@@ -384,8 +398,8 @@ export const createIdea = async (req: Request, res: Response) => {
         proposedSolution,
         description,
         images: imageUrls,
-        isPaid: isPaid || false,
-        price: isPaid ? price : null,
+        isPaid: isPaid === 'true',
+        price: isPaid === 'true' && price ? parseFloat(price) : null,
         status: 'DRAFT',
         authorId: userId,
         categoryId,
@@ -432,6 +446,15 @@ export const updateIdea = async (req: Request, res: Response) => {
     }
 
     const updateData: any = { ...req.body, images: imageUrls };
+    
+    // Handle FormData type conversion
+    if (updateData.isPaid !== undefined) {
+      updateData.isPaid = updateData.isPaid === 'true';
+    }
+    if (updateData.price !== undefined) {
+      updateData.price = (updateData.isPaid && updateData.price) ? parseFloat(updateData.price) : null;
+    }
+
     if (req.body.title) {
       updateData.slug = generateSlug(req.body.title);
     }

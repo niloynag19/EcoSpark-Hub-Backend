@@ -13,6 +13,9 @@ import userRoutes from './modules/user/user.routes';
 import paymentRoutes from './modules/payment/payment.routes';
 import newsletterRoutes from './modules/newsletter/newsletter.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import { AIRoutes } from './modules/ai/ai.routes';
+import prisma from './config/db';
+
 
 dotenv.config();
 
@@ -30,6 +33,16 @@ app.use(passport.initialize());
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'EcoSpark Hub API is running 🌿', timestamp: new Date().toISOString() });
+});
+
+// DB Warmup endpoint - hits the DB to wake up serverless instances early
+app.get('/api/health/db', async (req, res) => {
+  try {
+    await prisma.user.findFirst();
+    res.json({ success: true, message: 'Database is awake 🌿' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Database is starting up...' });
+  }
 });
 
 // Root route
@@ -57,6 +70,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ai', AIRoutes);
+
 
 // 404 handler
 app.use((req, res) => {
